@@ -3,26 +3,26 @@
 #include <math.h>
 namespace MyGeo3D {
 
-	template<typename VT = int,VT INVALIDVT = -1>
+	template<typename VT = int>
 	class Point3D;
-	template<typename VT = int, VT INVALIDVT = -1>
+	template<typename VT = int>
 	class Line3D;
-	template<typename VT = int, VT INVALIDVT = -1>
+	template<typename VT = int>
 	class Vector3D;
-	template<typename VT = int, VT INVALIDVT = -1>
+	template<typename VT = int>
 	class Surface3D;
 
 
 #ifndef MYABS
 #define MYABS(x) ((x)<(-x)?(-x):(x))
 #endif
-	template<typename VT, VT INVALIDVT>
+	template<typename VT>
 	class Point3D
 	{
-		typedef Point3D<VT, INVALIDVT> Point3;
-		typedef Vector3D<VT, INVALIDVT> Vector3;
-		typedef Line3D<VT, INVALIDVT> Line3;
-		typedef Surface3D<VT, INVALIDVT> Surface3;
+		typedef Point3D<VT> Point3;
+		typedef Vector3D<VT> Vector3;
+		typedef Line3D<VT> Line3;
+		typedef Surface3D<VT> Surface3;
 	public:
 		Point3D() :x(0), y(0) ,z(0), invalid(true) {}
 		explicit Point3D(const Vector3& a) :x(a.x), y(a.y),z(a.z) {}
@@ -33,7 +33,7 @@ namespace MyGeo3D {
 		VT Dist(const Line3& line) const {
 			// 向量叉乘长度可看成以向量为相邻两边的平行四边形面积
 			// 除以其底边长等于底边上的高，即点到直线距离
-			if (!IsValid() || !line.IsValid()) return INVALIDVT;
+			if (!IsValid() || !line.IsValid()) return 0;
 			const Vector3 v = line.ToVector(),
 				u(line.P1(), *this);
 			return v.CrossLength(u) / v.Length();
@@ -71,12 +71,12 @@ namespace MyGeo3D {
 		bool invalid;
 	};
 
-	template<typename VT, VT INVALIDVT>
-	class Vector3D :public Point3D<VT, INVALIDVT> {
-		typedef Point3D<VT, INVALIDVT> Point3;
-		typedef Vector3D<VT, INVALIDVT> Vector3;
-		typedef Line3D<VT, INVALIDVT> Line3;
-		typedef Surface3D<VT, INVALIDVT> Surface3;
+	template<typename VT>
+	class Vector3D :public Point3D<VT> {
+		typedef Point3D<VT> Point3;
+		typedef Vector3D<VT> Vector3;
+		typedef Line3D<VT> Line3;
+		typedef Surface3D<VT> Surface3;
 	public:
 		Vector3D() :Point3D() {}
 		explicit Vector3D(const Point3& point) :Point3D(point) {} // 禁止Vector和Point之间隐式转换
@@ -120,13 +120,13 @@ namespace MyGeo3D {
 		}
 	};
 
-	template<typename VT, VT INVALIDVT >
+	template<typename VT>
 	class Line3D
 	{
-		typedef Point3D<VT, INVALIDVT> Point3;
-		typedef Vector3D<VT, INVALIDVT> Vector3;
-		typedef Line3D<VT, INVALIDVT> Line3;
-		typedef Surface3D<VT, INVALIDVT> Surface3;
+		typedef Point3D<VT> Point3;
+		typedef Vector3D<VT> Vector3;
+		typedef Line3D<VT> Line3;
+		typedef Surface3D<VT> Surface3;
 	public:
 		Line3D() :p1(), p2() {}
 		explicit Line3D(const Point3& point) :p1(0, 0，0), p2(point) {}
@@ -188,13 +188,13 @@ namespace MyGeo3D {
 	};
 
 
-	template<typename VT, VT INVALIDVT >
+	template<typename VT>
 	class Surface3D
 	{
-		typedef Point3D<VT, INVALIDVT> Point3;
-		typedef Vector3D<VT, INVALIDVT> Vector3;
-		typedef Line3D<VT, INVALIDVT> Line3;
-		typedef Surface3D<VT, INVALIDVT> Surface3;
+		typedef Point3D<VT> Point3;
+		typedef Vector3D<VT> Vector3;
+		typedef Line3D<VT> Line3;
+		typedef Surface3D<VT> Surface3;
 	public:
 		Surface3D():p1(),p2(),p3(), iIsValid(0) {}
 		Surface3D(const Line3 &a, const Line3 &b):p1(a.P1()),p2(a.P2()),p3(a.P2()+b.ToVector()), iIsValid(0) {	};
@@ -254,14 +254,14 @@ namespace MyGeo3D {
 		Point3 p1, p2, p3;
 	};
 
-	template<typename VT=int, VT INVALIDVT = -1>
+	template<typename VT=int>
 	class Geo3D {
 	public:
 		typedef VT Vt;
-		typedef Point3D<VT, INVALIDVT> Point;
-		typedef Vector3D<VT, INVALIDVT> Vector;
-		typedef Line3D<VT, INVALIDVT> Line;
-		typedef Surface3D<VT, INVALIDVT> Surface;
+		typedef Point3D<VT> Point;
+		typedef Vector3D<VT> Vector;
+		typedef Line3D<VT> Line;
+		typedef Surface3D<VT> Surface;
 	};
 
 };
