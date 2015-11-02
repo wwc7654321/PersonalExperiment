@@ -2,7 +2,14 @@
 #define MYGEOMETRY2D_H
 #include <math.h>
 namespace MyGeo2D{
-
+#define SMALLDD 0.0000000001
+	template<typename VT>
+	inline bool MyEqual(VT x, VT y) {
+		return x - SMALLDD <= y && x + SMALLDD >= y;
+	}
+	inline bool MyEqual(int x, int y) {
+		return x == y;
+	}
 	template<typename VT = int>
 	class Point2D;
 	template<typename VT = int>
@@ -45,8 +52,8 @@ namespace MyGeo2D{
 		Point2D<VT> & operator*=(VT a) { x *= a; y *= a; invalid = false; return *this; }
 		Point2D<VT>  operator/ (VT a)const { Point2D<VT> tmp(*this); tmp /= a; return tmp; }
 		Point2D<VT> & operator/=(VT a) { x /= a; y /= a; invalid = false; return *this; }
-		bool operator==(const Point2D<VT> &a)const { return x == a.x&&y == a.y; }
-		bool operator!=(const Point2D<VT> &a)const { return x != a.x||y != a.y; }
+		bool operator==(const Point2D<VT> &a)const { return MyEqual(x ,a.x)&& MyEqual(y, a.y); }
+		bool operator!=(const Point2D<VT> &a)const { return !operator==(a); }
 
 		Point2D<VT> & operator=(const Point2D<VT> &a) { Set(a); return *this; }
 		void Set(const Point2D<VT> &a) { x = a.x; y = a.y; invalid = a.invalid; }
@@ -57,7 +64,7 @@ namespace MyGeo2D{
 		VT Y(VT yy) { invalid = false; return y = yy; }
 		bool IsValid() const{ return !invalid; }
 		void SetZero() { x = 0; y = 0; invalid = false; }
-		bool IsZero() { return x == 0 && y == 0; }
+		bool IsZero() { return MyEqual(x, 0)&& MyEqual(y, 0); }
 	protected: 
 		Point2D<VT> & operator=(const Vector2D<VT> &a);	// 禁止Vector和Point之间隐式转换
 		friend class Line2D<VT>;
@@ -93,9 +100,9 @@ namespace MyGeo2D{
 		// 叉乘并设置
 		Vector2D<VT> & CrossAndSet(const Vector2D<VT>& a) { return *this = Vector2D<VT>(); }
 		// 平行   parallel 
-		bool Parallel(const Vector2D<VT>&a)const { return x*a.y == y*a.x; }
+		bool Parallel(const Vector2D<VT>&a)const { return MyEqual(x*a.y , y*a.x); }
 		// 垂直   perpendicular
-		bool Perp(const Vector2D<VT>&a)const { return 0==*this * a; }
+		bool Perp(const Vector2D<VT>&a)const { return MyEqual(0,*this * a); }
 		// 规格化
 		void Normalize() { operator /=(Length()); }
 		// 获得单位向量
@@ -131,15 +138,22 @@ namespace MyGeo2D{
 		// 点在直线上
 		bool PointOnLine(const Point2D<VT>&a)const { 
 			if (!IsValid())return false;
-			return DX()* a.y - DY()* a.x == p2.x*p1.y - p1.x*p2.y;
+			return MyEqual( DX()* a.y - DY()* a.x , p2.x*p1.y - p1.x*p2.y);
 		}
 		// 点在线段上
 		bool PointOnSegLine(const Point2D<VT>&a)const { 
+			return PointInRect(a) && PointOnLine(a);
+		}
+		bool PointInRect(const Point2D<VT>&a)const {
 			if (!IsValid())return false;
 			return (p1.x<p2.x ? p1.x : p2.x) <= a.x && (p1.x>p2.x ? p1.x : p2.x) >= a.x &&
-				(p1.y<p2.y ? p1.y : p2.y) <= a.y && (p1.y>p2.y ? p1.y : p2.y) >= a.y &&PointOnLine(a);
+				(p1.y<p2.y ? p1.y : p2.y) <= a.y && (p1.y>p2.y ? p1.y : p2.y) >= a.y;
 		}
+		Point2D<VT> Cross(Line2D<VT> line)
+		{
 
+
+		}
 		Line2D<VT> & operator=(const Line2D<VT> &line) { Set(line); return *this; }
 		void Set(const Line2D<VT>&line) { p1 = line.p1; p2 = line.p2; }
 		void Set(const Point2D<VT>&point1, const Point2D<VT>&point2) { p1 = point1; p2 = point2; }

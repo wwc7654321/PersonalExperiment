@@ -2,7 +2,14 @@
 #define MYGEOMETRY3D_H
 #include <math.h>
 namespace MyGeo3D {
-
+#define SMALLDDD 0.0000000001
+	template<typename VT>
+	inline bool MyEqual(VT x, VT y) {
+		return x-SMALLDDD <= y && x+SMALLDDD >= y;
+	}
+	inline bool MyEqual(int x, int y) {
+		return x == y;
+	}
 	template<typename VT = int>
 	class Point3D;
 	template<typename VT = int>
@@ -47,8 +54,8 @@ namespace MyGeo3D {
 		Point3 & operator*=(VT a) { x *= a; y *= a; z *= a; invalid = false; return *this; }
 		Point3  operator/ (VT a)const { Point3 tmp(*this); tmp /= a; return tmp; }
 		Point3 & operator/=(VT a) { x /= a; y /= a; z /= a; invalid = false; return *this; }
-		bool operator==(const Point3 &a)const { return x == a.x && y == a.y && z== a.z; }
-		bool operator!=(const Point3 &a)const { return x != a.x || y != a.y || z != a.z; }
+		bool operator==(const Point3 &a)const { return MyEqual(x ,a.x) && MyEqual(y, a.y) && MyEqual(z, a.z); }
+		bool operator!=(const Point3 &a)const { return !operator==(a); }
 
 		Point3 & operator=(const Point3 &a) { Set(a); return *this; }
 		void Set(const Point3 &a) { x = a.x; y = a.y; z = a.z; invalid = a.invalid; }
@@ -60,8 +67,9 @@ namespace MyGeo3D {
 		VT Y(VT yy) { invalid = false; return y = yy; }
 		VT Z(VT zz) { invalid = false; return z = zz; }
 		bool IsValid() const { return !invalid; }
+		void SetValid(bool b){ invalid = !b; }
 		void SetZero() { x = 0; y = 0; z=0; invalid = false; }
-		bool IsZero() { return x == 0 && y == 0 && z==0; }
+		bool IsZero() { return MyEqual(x, 0) && MyEqual(y, 0) && MyEqual(x, 0); }
 	protected:
 		Point3 & operator=(const Vector3 &a);	// 禁止Vector和Point之间隐式转换
 		friend class Line3;
@@ -84,11 +92,13 @@ namespace MyGeo3D {
 		Vector3D(VT xx, VT yy,VT zz) :Point3D(xx, yy,zz) {}
 		// 向量乘
 		VT operator* (const Vector3 &a)const { return a.x*x + a.y*y + a.z*z; }
+		Vector3 operator- ()const { Vector3 tmp(-x,-y); return tmp; }
 		Vector3  operator+ (const Vector3 &a)const { Vector3 tmp(*this); tmp += a; return tmp; }
 		Vector3 & operator+=(const Vector3 &a) { Point3::operator+=(a); return *this; }
-		Vector3 operator- ()const { Vector3 tmp(-x,-y); return tmp; }
 		Vector3  operator- (const Vector3 &a)const { Vector3 tmp(*this); tmp -= a; return tmp; }
 		Vector3 & operator-=(const Vector3 &a) { Point3::operator-=(a); return *this; }
+		Point3  operator+ (const Point3 &a)const { return a.operator+(*this); }
+		Point3  operator- (const Point3 &a)const { return a.operator-(*this); }
 
 		Vector3  operator* (VT a)const { Vector3 tmp(*this); tmp *= a; return tmp; }
 		Vector3 & operator*=(VT a) { Point3::operator*=(a); return *this; }
@@ -103,9 +113,9 @@ namespace MyGeo3D {
 		// 叉乘并设置
 		Vector3 & CrossAndSet(const Vector3& a) { return *this = Cross(a); }
 		//平行   parallel 
-		bool Parallel(const Vector3&a)const { return x*a.y == y*a.x && y*a.z == z*a.y; }
+		bool Parallel(const Vector3&a)const { return MyEqual(x*a.y , y*a.x) && MyEqual(y*a.z,z*a.y); }
 		//垂直   perpendicular
-		bool Perp(const Vector3&a)const { return 0 == *this * a; }
+		bool Perp(const Vector3&a)const { return MyEqual(*this * a,0) ; }
 		// 规格化
 		void Normalize() { operator /=(Length()); }
 		// 获得单位向量
@@ -145,18 +155,45 @@ namespace MyGeo3D {
 		// 点在直线上
 		bool PointOnLine(const Point3&a)const {
 			if (!IsValid())return false;
-			return DX()* a.y - DY()* a.x == p2.x*p1.y - p1.x*p2.y &&
-				DY()*a.z - DZ()*a.y == p2.y * p1.z - p1.y*p2.z;
+			return MyEqual(DX()* a.y - DY()* a.x , p2.x*p1.y - p1.x*p2.y) &&
+				MyEqual(DY()*a.z - DZ()*a.y, p2.y * p1.z - p1.y*p2.z);
 		}
 		// 点在线段上
 		bool PointOnSegLine(const Point3&a)const {
+			return PointInRect(a) && PointOnLine(a);
+		}
+		// 点在以两点为对角线，六边平行坐标轴的长方体范围内
+		bool PointInRect(const Point3&a)const {
 			if (!IsValid())return false;
 			return (p1.x<p2.x ? p1.x : p2.x) <= a.x && (p1.x>p2.x ? p1.x : p2.x) >= a.x &&
 				(p1.y<p2.y ? p1.y : p2.y) <= a.y && (p1.y>p2.y ? p1.y : p2.y) >= a.y &&
-				(p1.z<p2.z ? p1.z : p2.z) <= a.z && (p1.z>p2.z ? p1.z : p2.z) >= a.z &&
-				PointOnLine(a);
+				(p1.z<p2.z ? p1.z : p2.z) <= a.z && (p1.z>p2.z ? p1.z : p2.z) >= a.z;
 		}
+		Point3 CrossAt(const Line3& line) {
+			if (!line.IsValid()||!IsValid())return Point3();
+			//bool b1 = PointOnLine(line.p1), b2 = PointOnLine(line.p2);
+			if (Parallel(line)) { return Point3(); }
+			/*if (b1 || b2)
+			{
+				if (!b1)
+				{
+					if (PointInRect(line.p2))return Point3(line.p2);
+					else return Point3();
+				}
+				else if (!b2) 
+				{
+					if (PointInRect(line.p1))return Point3(line.p1);
+					else return Point3();
+				}
+				else
+				{
+					return Point3();
+				}
+			}*/
+			if (!Surface3(p1, p2, line.p1).PointOnSurface(line.p2))return Point3();
+			// 四点共面，两线不重合
 
+		}
 		Line3 & operator=(const Line3 &line) { Set(line); return *this; }
 		void Set(const Line3&line) { p1 = line.p1; p2 = line.p2; }
 		void Set(const Point3&point1, const Point3&point2) { p1 = point1; p2 = point2; }
