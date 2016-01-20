@@ -38,7 +38,10 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <IncludePath>$(ProjectDir);E:\myeasyProgram\Environment\GTK\include\atk-1.0;E:\myeasyProgram\Environment\GTK\include\pango-1.0;E:\myeasyProgram\Environment\GTK\include;E:\myeasyProgram\Environment\GTK\include\glib-2.0;E:\myeasyProgram\Environment\GTK\include\gtk-2.0;E:\myeasyProgram\Environment\GTK\include\cairo;$(IncludePath)</IncludePath>
+    <LibraryPath>E:\myeasyProgram\Environment\GTK\lib;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -47,6 +50,7 @@
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>gtk-win32-2.0.lib;gdk-win32-2.0.lib;cairo.lib;gobject-2.0.lib;glib-2.0.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -65,8 +69,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\oldmyVector.h" />
-    <ClInclude Include="MyGeometry2D.h" />
-    <ClInclude Include="MyGeometry3D.h" />
+    <ClInclude Include="MyGeometry2DBase.h" />
+    <ClInclude Include="MyGeometry3DBase.h" />
+    <ClInclude Include="Raytrace.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />

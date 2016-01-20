@@ -23,10 +23,13 @@
     <ClInclude Include="..\oldmyVector.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="MyGeometry2D.h">
+    <ClInclude Include="MyGeometry3DBase.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="MyGeometry3D.h">
+    <ClInclude Include="MyGeometry2DBase.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Raytrace.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

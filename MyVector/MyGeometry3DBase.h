@@ -110,6 +110,8 @@ namespace MyGeo3D {
 		VT CrossLength(const Vector3& a)const { return Cross(a).Length(); }
 		// 向量长度
 		VT Length()const { return (VT)sqrt(x*x + y*y + z*z); }
+		// 向量长度平方
+		VT SqLength()const { return x*x + y*y + z*z; }
 		// 叉乘并设置
 		Vector3 & CrossAndSet(const Vector3& a) { return *this = Cross(a); }
 		//平行   parallel 
@@ -117,7 +119,7 @@ namespace MyGeo3D {
 		//垂直   perpendicular
 		bool Perp(const Vector3&a)const { return MyEqual(*this * a,0) ; }
 		// 规格化
-		void Normalize() { operator /=(Length()); }
+		Vector3& Normalize() { operator /=(Length()); return *this; }
 		// 获得单位向量
 		Vector3 ToNormalized() { return *this / Length(); }
 		// 投影长度，可能小于0
@@ -169,10 +171,47 @@ namespace MyGeo3D {
 				(p1.y<p2.y ? p1.y : p2.y) <= a.y && (p1.y>p2.y ? p1.y : p2.y) >= a.y &&
 				(p1.z<p2.z ? p1.z : p2.z) <= a.z && (p1.z>p2.z ? p1.z : p2.z) >= a.z;
 		}
-		Point3 CrossAt(const Line3& line) {
-			if (!line.IsValid()||!IsValid())return Point3();
+	protected:
+		bool Gen(double a, double b, double c, double d, double e, double f, double &x, double &y) {
+
+			if (a*e == b*d)return false;
+			x = (b*f - e*c) / (a*e - b*d);
+			y = (a*f - d*c) / (b*d - a*e);
+			return true;
+		}
+	public:
+
+		Point3 CrossAt(const Line3& line, bool inRect = true) {
+			if (!line.IsValid() || !IsValid())return Point3();
+			Vector3Df u(p1, p2), v(line.P1(),line.P2()), t(line.P2(), p2);
+			int i = 0;
+			double x, y;
+			if (Gen(u.X(), v.X(), t.X(), u.Y(), v.Y(), t.Y(), x, y))
+			{
+				Point3 p ((VT)(u.X()*x + p2.X()), (VT)(u.Y()*x + p2.Y()),(VT)(u.Z()*x + p2.Z()));
+				Point3 pp((VT)(line.P2().X()- v.X()*y), (VT)(line.P2().Y() - v.Y()*y), (VT)(line.P2().Z() - v.Z()*y));
+				if (p == pp && (!inRect || (PointInRect(p) && line.PointInRect(p))))
+				{
+					return p;
+				} 
+				else return Point3Df();
+			}
+			if (Gen(u.Y(), v.Y(), t.Y(), u.Z(), v.Z(), t.Z(), x, y))
+			{
+				Point3 p((VT)(u.X()*x + p2.X()), (VT)(u.Y()*x + p2.Y()), (VT)(u.Z()*x + p2.Z()));
+				Point3 pp((VT)(line.P2().X() - v.X()*y), (VT)(line.P2().Y() - v.Y()*y), (VT)(line.P2().Z() - v.Z()*y));
+				if (p == pp && (!inRect || (PointInRect(p) && line.PointInRect(p))))
+				{
+					return p;
+				}
+				else return Point3Df();
+			}
+			return Point3Df();
+		}
+		//Point3 CrossAt(const Line3& line) {
+		//	if (!line.IsValid()||!IsValid())return Point3();
 			//bool b1 = PointOnLine(line.p1), b2 = PointOnLine(line.p2);
-			if (Parallel(line)) { return Point3(); }
+			//if (Parallel(line)) { return Point3(); }
 			/*if (b1 || b2)
 			{
 				if (!b1)
@@ -190,10 +229,10 @@ namespace MyGeo3D {
 					return Point3();
 				}
 			}*/
-			if (!Surface3(p1, p2, line.p1).PointOnSurface(line.p2))return Point3();
+			//if (!Surface3(p1, p2, line.p1).PointOnSurface(line.p2))return Point3();
 			// 四点共面，两线不重合
 
-		}
+		//}
 		Line3 & operator=(const Line3 &line) { Set(line); return *this; }
 		void Set(const Line3&line) { p1 = line.p1; p2 = line.p2; }
 		void Set(const Point3&point1, const Point3&point2) { p1 = point1; p2 = point2; }
@@ -206,8 +245,9 @@ namespace MyGeo3D {
 		VT Length() const { return sqrt(SqLength()); }
 		VT SqLength() const { VT i = (p1.x - p2.x), j = (p1.y - p2.y),k=(p1.z - p2.z);	return i*i + j*j + k*k; }
 		VT ManhattanLength() const { VT i = (p1.x - p2.x), j = (p1.y - p2.y), k = (p1.z - p2.z); return MYABS(i) + MYABS(j)+ MYABS(k); }
-		Point3 P1()const { return p1; }
-		Point3 P2()const { return p2; }
+		const Point3& P1()const { return p1; }
+		const Point3& P2()const { return p2; }
+		Point3 Mid()const { return (p1+p2) / 2; }
 		void P1(const Point3& point) { p1 = point; }
 		void P2(const Point3& point) { p2 = point; }
 		VT DX()const { return p2.x - p1.x; }
@@ -266,16 +306,24 @@ namespace MyGeo3D {
 			return v4.Perp(v3) && v4.Perp(l.ToLine1().ToVector()) && v4.Perp(l.ToLine2().ToVector());
 		}
 
+		Surface3 operator+(const Vector3& v) { Surface3 s(this); s += (v); return s; }
+		Surface3& operator+=(const Vector3& v) { p1 += v; p2 += v;p3+=v; return this; }
+		Surface3 operator-(const Vector3& v) { Surface3 s(this); s -= (v); return s; }
+		Surface3& operator-=(const Vector3& v) { p1 -= v; p2 -= v; p3 -= v; return this; }
+
+
+
 		void Set(const Line3 &a, const Line3 &b) { p1 = a.P1(); p2 = a.P2(); p3 = a.P2() + b.ToVector(); iIsValid = 0;}
 		void Set(const Vector3 &a, const Vector3 &b, const Point3 &c = Point3(0, 0, 0)) { p1 = c; p2 = c + a; p3 = c + b; iIsValid = 0;	}
 		void Set(const Point3 &a, const Point3 &b, const Point3 &c) { p1 = a; p2 = b; p3 = c; iIsValid = 0;	}
 
+
 		Line3 ToLine1()const { return Line3(p1,p2); }
 		Line3 ToLine2()const { return Line3(p2, p3); }
 		Line3 ToLine3()const { return Line3(p3, p1); }
-		Point3 P1()const { return p1; }
-		Point3 P2()const { return p2; }
-		Point3 P3()const { return p3; }
+		const Point3& P1()const { return p1; }
+		const Point3& P2()const { return p2; }
+		const Point3& P3()const { return p3; }
 		void P1(const Point3& point) { p1 = point; iIsValid = 0; }
 		void P2(const Point3& point) { p2 = point; iIsValid = 0;	}
 		void P3(const Point3& point) { p3 = point; iIsValid = 0;	}
@@ -286,6 +334,7 @@ namespace MyGeo3D {
 			}
 			return iIsValid == 1;
 		}
+		void Move(const Vector3& a) { p1 += a; p2 += a;p3+=a; }
 	private:
 		int iIsValid; // 0 not checked  1 valid 2 invalid
 		Point3 p1, p2, p3;
