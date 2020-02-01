@@ -107,7 +107,8 @@ int getStride()
 {
 	return getWidth()*4;
 }
-
+#define  TEST_BY_GTK3
+#ifdef TEST_BY_GTK2
 #define goffset int
 #include <cairo.h>
 #include <gtk/gtk.h>
@@ -116,7 +117,7 @@ int gtkWindow(pFunGEvent exposeFunc, gint(*pFuncTimer)(gpointer data), int iPWid
 gboolean on_expose_event(GtkWidget *widget, GdkEventExpose *event, gpointer data);
 gint timer(gpointer data);
 
-int main() {
+int TestGTK() {
 	data = new unsigned char[getStride()*getHeight()];
 	memset(data, 0, getStride()*getHeight());
 	//Sphere<int> sss;
@@ -185,10 +186,16 @@ int gtkWindow(pFunGEvent exposeFunc, gint (*pFuncTimer)(gpointer data),int iPWid
 	return 0;
 }
 
+cairo_t* GetCairo(GtkWidget* widget)
+{
+	cairo_t* cr;
+	cr = gdk_cairo_create(widget->window);
+	return cr;
+}
+
 gboolean on_expose_event(GtkWidget *widget, GdkEventExpose *event, gpointer data)
 {
-	cairo_t *cr;
-	cr = gdk_cairo_create(widget->window);
+	auto cr = GetCairo(widget);
 	cairo_surface_t *image = cairo_image_surface_create_from_png("star.png");
 	cairo_format_t f=cairo_image_surface_get_format(image);
 	int w=cairo_image_surface_get_width(image);
@@ -201,8 +208,8 @@ gboolean on_expose_event(GtkWidget *widget, GdkEventExpose *event, gpointer data
 	/*cairo_set_source_surface(cr, imgs, 0, 0);
 	cairo_paint(cr); */
 
-	 
-	cr = gdk_cairo_create(widget->window);
+
+	cr = GetCairo(widget);
 	cairo_set_source_surface(cr, imgs, 10, 10);
 
 	/*cairo_surface_t *suf;
@@ -226,4 +233,143 @@ gint timer(gpointer data)
 {
 	printf("a");
 	return TRUE;
+}
+#else
+#ifdef TEST_BY_GTK3
+#include <cairo.h>
+#include <gtk/gtk.h>
+typedef gboolean(*pFunGEvent)(GtkWidget* widget, cairo_t* cr, gpointer user_data);
+int gtkWindow(pFunGEvent exposeFunc, gint(*pFuncTimer)(gpointer data), int iPWidth, int iPHeight, char* title = 0, int argc = 0, char** argv = 0);
+gboolean on_draw(GtkWidget* widget, cairo_t* cr, gpointer user_data);
+gint timer(gpointer data);
+
+int TestGTK() {
+	data = new unsigned char[getStride() * getHeight()];
+	memset(data, 0, getStride() * getHeight());
+	//Sphere<int> sss;
+	Ray3D<int> rrr;
+	GeometryShape<int>::IntersectPoint ip;
+	//sss.intersect(rrr, ip);
+	Point3Di pp;
+	Surface3Di sur;
+	Vector3Di vect(1, 3, 5), vecto(2, 3, 4);
+	Point p1(200, 200);
+	Vector vec;
+	Line l1(200, 300, 400, 500);
+	vec.X(100);
+	p1 += vec;
+	vect *= 2;
+	vect += vecto;
+	Print(vect);
+	sur.PointOnSurface(pp);
+	printf("%d,%d  %d\n", p1.X(), p1.Y(), p1.Dist(l1));
+	printf("200,300 %d\n", l1.PointOnLine(Point(200, 300)));
+	printf("200,300 %d\n", l1.PointOnSegLine(Point(200, 300)));
+
+	printf("300,300 %d\n", l1.PointOnLine(Point(300, 300)));
+	printf("300,300 %d\n", l1.PointOnSegLine(Point(300, 300)));
+
+	printf("600,700 %d\n", l1.PointOnLine(Point(600, 700)));
+	printf("600,700 %d\n", l1.PointOnSegLine(Point(600, 700)));
+
+	//p1 = vec;
+	//vec = p1;
+	Point3Df po1(0, 2, 0), po2(2, 0, 0), po3(1, 0, 0), po4(3, 2, 0);
+	Point3Df p = Line3Df(po1, po2).CrossAt(Line3Df(po3, po4));
+	if (p.IsValid()) Print(p);
+	else printf("no point");
+	putchar('\n');
+
+
+	Pointf poi1(0, 2), poi2(2, 0), poi3(1, 0), poi4(3, 2);
+	Pointf pi = Linef(poi1, poi2).CrossAt(Linef(poi3, poi4));
+	if (pi.IsValid()) Print(pi);
+	else printf("no point");
+	putchar('\n');
+	//getchar();
+	gtkWindow(&on_draw, &timer, 600, 480, "Test1");
+
+	return 0;
+}
+
+
+int gtkWindow(pFunGEvent exposeFunc, gint(*pFuncTimer)(gpointer data), int iPWidth, int iPHeight, char* title/*=0*/, int argc/*=0*/, char** argv/*=0*/)
+{
+	GtkWidget* window;
+	gtk_init(&argc, &argv);
+	window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+	g_signal_connect(window, "draw", G_CALLBACK(exposeFunc), NULL);
+	g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
+	gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
+	gtk_window_set_default_size(GTK_WINDOW(window), iPWidth, iPHeight);
+	if (title != 0) gtk_window_set_title(GTK_WINDOW(window), title);
+
+	int sign = g_timeout_add(1000, GSourceFunc(pFuncTimer), 0);
+
+	gtk_widget_set_app_paintable(window, TRUE);
+	gtk_widget_show_all(window);
+	gtk_main();
+	return 0;
+}
+
+cairo_t* GetCairo(GtkWidget* widget)
+{
+	cairo_t* cr; 
+	auto w = gtk_widget_get_window(widget);
+	auto cont = gdk_window_begin_draw_frame(w, nullptr);
+	cr = gdk_drawing_context_get_cairo_context(cont); 
+	return cr;
+}
+
+gboolean on_draw(GtkWidget* widget, cairo_t* cr, gpointer user_data)
+{
+	//auto cr = GetCairo(widget);
+	cairo_surface_t* image = cairo_image_surface_create_from_png("star.png");
+	cairo_format_t f = cairo_image_surface_get_format(image);
+	int w = cairo_image_surface_get_width(image);
+	int h = cairo_image_surface_get_height(image);
+	int s = cairo_image_surface_get_stride(image);
+	unsigned char* d = cairo_image_surface_get_data(image);
+
+
+	cairo_surface_t* imgs = cairo_image_surface_create_for_data(d, CAIRO_FORMAT_ARGB32, w, h, s);
+	/*cairo_set_source_surface(cr, imgs, 0, 0);
+	cairo_paint(cr); */
+
+
+	//cr = GetCairo(widget);
+	//cairo_set_source_surface(cr, imgs, 10, 10);
+
+	cairo_surface_t *suf;
+	cairo_t *suft;
+	suf = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 40, 40);
+	suft = cairo_create(suf);
+	cairo_set_source_surface(suft, imgs, 0, 0);
+	cairo_paint(suft);
+	//cairo_surface_write_to_png(suf, "image.png");
+
+	cairo_set_source_surface(cr, suf, 100, 100  );
+	cairo_paint(cr);
+	cairo_set_source_surface(cr, suf, 300, 300);
+
+	cairo_paint(cr);
+	//cairo_destroy(cr);
+	return FALSE;
+}
+gint timer(gpointer data)
+{
+	printf("a");
+	return TRUE;
+}
+#else
+int TestGTK() {
+	return 0;
+}
+#endif
+#endif
+
+int main()
+{
+	TestGTK();
+	return 0;
 }
