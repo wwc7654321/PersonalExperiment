@@ -353,7 +353,9 @@ gboolean on_draw(GtkWidget* widget, cairo_t* cr, gpointer user_data)
 	cairo_set_source_surface(cr, suf, 300, 300);
 
 	cairo_paint(cr);
-	//cairo_destroy(cr);
+	cairo_destroy(suft);
+	cairo_surface_destroy(suf);
+	cairo_surface_destroy(imgs);
 	return FALSE;
 }
 gint timer(gpointer data)
